@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktive Projektvorstellung: Ordnungs-KI Freiburg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Beige, Slate, Stone) with a subtle Teal accent -->
+    <!-- Application Structure Plan: A tab-based, single-page application structure was chosen to logically segment the project's complex information. This non-linear design allows users to freely explore sections of interest—The Vision, The Solution, The Technology, and The Future—without being forced into a linear narrative. This enhances usability by giving users control over their information discovery journey. Key interactions include tab-based navigation to switch content views, interactive diagrams to explain workflows, a dynamic chart to visualize AI components, and a new LLM-powered text generation feature for personalized suggestions, making abstract concepts tangible and easier to grasp. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Project Summary -> Goal: Inform -> Viz/Presentation: Hero section with clear headline and summary text. -> Interaction: Static. -> Justification: Immediately establishes the project's purpose. -> Library/Method: HTML/Tailwind.
+        - Report Info: User Workflow (Coach/Client) -> Goal: Organize/Explain -> Viz/Presentation: Interactive HTML/CSS diagram. -> Interaction: Clicking on user roles (Coach/Client) reveals their specific workflow steps. -> Justification: Actively engages the user and simplifies a complex process into digestible parts. -> Library/Method: HTML/Tailwind/JS.
+        - Report Info: AI Techniques -> Goal: Compare/Inform -> Viz/Presentation: Dynamic Radar Chart. -> Interaction: Hovering over points (though disabled in this static version) would typically show tooltips. The visual comparison remains. -> Justification: A radar chart effectively shows the multi-faceted nature of the AI and the interplay of different techniques. -> Library/Method: Chart.js (Canvas).
+        - Report Info: Challenges & Future Steps -> Goal: Inform/Organize -> Viz/Presentation: Clickable accordion/card layout. -> Interaction: Users click on a challenge or future step to expand and read the details. -> Justification: Keeps the UI clean and prevents information overload, allowing users to focus on one topic at a time. -> Library/Method: HTML/Tailwind/JS.
+        - NEW: Report Info: Personalized Cleanup Suggestions -> Goal: Support/Guide -> Viz/Presentation: Text input, button, and dynamic text output. -> Interaction: User inputs a description, clicks button, AI generates suggestions. -> Justification: Provides direct, actionable AI-powered assistance, leveraging LLM capabilities to offer tailored advice. -> Library/Method: HTML/Tailwind/JS, Gemini API (gemini-2.0-flash).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+        }
+        .tab-active {
+            border-color: #14B8A6; /* teal-500 */
+            color: #14B8A6; /* teal-500 */
+            font-weight: 500;
+        }
+        .tab-inactive {
+            border-color: transparent;
+            color: #57534E; /* stone-600 */
+        }
+        .content-section {
+            display: none;
+        }
+        .content-active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .interactive-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .interactive-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .workflow-btn-active {
+            background-color: #14B8A6; /* teal-500 */
+            color: white;
+        }
+        .workflow-btn-inactive {
+            background-color: #E7E5E4; /* stone-200 */
+            color: #57534E; /* stone-600 */
+        }
+        .workflow-step {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #14B8A6; /* Teal */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+
+        <!-- Header Section -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-2">Ordnungs-KI Freiburg</h1>
+            <p class="text-lg md:text-xl text-stone-600">Ihr digitaler Assistent für nachhaltige Ordnung und Gewohnheitsbildung</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="mb-8 border-b border-stone-300">
+            <ul class="flex flex-wrap -mb-px justify-center text-sm font-medium text-center">
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-active" data-tab="vision">Die Vision</button>
+                </li>
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="solution">Die Lösung</button>
+                </li>
+                <li class="mr-2">
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="tech">Die Technologie</button>
+                </li>
+                <li>
+                    <button class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive" data-tab="future">Die Zukunft</button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content Sections -->
+        <main>
+            <!-- Vision Section -->
+            <section id="vision" class="content-section content-active">
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Das Problem & Unsere Vision</h2>
+                    <p class="text-stone-600 mb-6">
+                        In unserer schnelllebigen Welt führen physische und digitale Unordnung oft zu Stress und Überforderung. Professionelle Ordnungscoaches bieten wertvolle Hilfe, doch ihre Unterstützung ist nicht immer skalierbar oder für die langfristige Etablierung von Gewohnheiten ausgelegt. Unsere Vision ist es, diese Lücke mit "Ordnungs-KI Freiburg" zu schließen. Wir wollen die Expertise lokaler Coaches durch Technologie verstärken, um personalisierte und nachhaltige Organisationshilfe für jeden zugänglich zu machen und so zu mehr Wohlbefinden und mentaler Klarheit beizutragen.
+                    </p>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div class="bg-stone-100 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-slate-700">Physisches Chaos</h3>
+                            <p class="text-sm text-stone-600">Überwältigung durch materielle Gegenstände und unorganisierte Wohnräume.</p>
+                        </div>
+                        <div class="bg-stone-100 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-slate-700">Digitale Unordnung</h3>
+                            <p class="text-sm text-stone-600">Stress durch überfüllte Posteingänge, unstrukturierte Dateien und Informationsflut.</p>
+                        </div>
+                        <div class="bg-stone-100 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg text-slate-700">Fehlende Gewohnheiten</h3>
+                            <p class="text-sm text-stone-600">Schwierigkeiten, effektive und dauerhafte Organisationsroutinen zu etablieren.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Solution Section -->
+            <section id="solution" class="content-section">
+                 <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2 text-center">Eine Lösung für Zwei Nutzergruppen</h2>
+                    <p class="text-stone-600 mb-6 text-center">
+                        Die "Ordnungs-KI" ist ein Werkzeug, das die Zusammenarbeit zwischen Coach und Klient revolutioniert. Wählen Sie eine Rolle, um den spezifischen Arbeitsablauf und die Vorteile zu entdecken.
+                    </p>
+                    <div class="flex justify-center mb-8 gap-4">
+                        <button id="coachBtn" class="workflow-btn px-6 py-2 rounded-full font-medium transition-colors workflow-btn-active">Für den Coach</button>
+                        <button id="clientBtn" class="workflow-btn px-6 py-2 rounded-full font-medium transition-colors workflow-btn-inactive">Für den Klienten</button>
+                    </div>
+
+                    <div id="coachWorkflow" class="space-y-4">
+                        <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">1</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Räume analysieren</h3>
+                                <p class="text-stone-600 text-sm">Fotos von unorganisierten Bereichen analysieren lassen, um Unordnungstypen und Hotspots zu identifizieren.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">2</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Pläne erstellen</h3>
+                                <p class="text-stone-600 text-sm">KI-basierte, personalisierte Aufräumstrategien und Organisationssysteme für Klienten generieren.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">3</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Fortschritt verfolgen</h3>
+                                <p class="text-stone-600 text-sm">Den Fortschritt der Klienten über die App verfolgen und datengestützte Einblicke für die nächste Sitzung erhalten.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="clientWorkflow" class="space-y-4 hidden">
+                         <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">1</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Geführtes Entrümpeln</h3>
+                                <p class="text-stone-600 text-sm">Schritt-für-Schritt-Anleitungen erhalten, um spezifische Bereiche im eigenen Tempo zu organisieren.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">2</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Gewohnheiten aufbauen</h3>
+                                <p class="text-stone-600 text-sm">Tägliche oder wöchentliche Aufgaben und Erinnerungen erhalten, um nachhaltige Ordnungsgewohnheiten zu entwickeln.</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step flex items-start gap-4 p-4 bg-stone-50 rounded-lg">
+                            <div class="flex-shrink-0 w-8 h-8 bg-teal-500 text-white flex items-center justify-center rounded-full font-bold">3</div>
+                            <div>
+                                <h3 class="font-bold text-slate-700">Lokale Ressourcen finden</h3>
+                                <p class="text-stone-600 text-sm">Maßgeschneiderte Vorschläge für Spendenstellen, Recyclinghöfe oder Aufbewahrungslösungen in Freiburg entdecken.</p>
+                            </div>
+                        </div>
+
+                        <!-- New LLM Feature: Generate Cleanup Suggestions -->
+                        <div class="workflow-step p-4 bg-teal-50 rounded-lg mt-6">
+                            <h3 class="font-bold text-slate-700 mb-3">✨ Aufräum-Vorschläge generieren</h3>
+                            <p class="text-sm text-stone-600 mb-4">Beschreiben Sie einen Bereich, der Sie überfordert, oder ein Objekt, für das Sie keinen Platz finden, und lassen Sie sich von unserer KI inspirieren.</p>
+                            <textarea id="cleanupPrompt" class="w-full p-3 rounded-md border border-stone-300 focus:ring focus:ring-teal-200 focus:border-teal-400 mb-3 text-sm resize-y" rows="3" placeholder="Z.B. 'Mein Schreibtisch ist voller Papiere und alter Tassen.' oder 'Ich weiß nicht, wohin mit all meinen alten Büchern.'"></textarea>
+                            <button id="generateSuggestionsBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                Vorschläge generieren
+                                <span id="loadingSpinner" class="loading-spinner hidden"></span>
+                            </button>
+                            <div id="suggestionsOutput" class="mt-4 p-4 bg-white rounded-md border border-stone-200 text-stone-700 text-sm hidden">
+                                <!-- AI generated suggestions will appear here -->
+                            </div>
+                            <div id="errorOutput" class="mt-4 p-4 bg-red-100 text-red-700 rounded-md border border-red-200 text-sm hidden">
+                                <!-- Error messages will appear here -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tech Section -->
+            <section id="tech" class="content-section">
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                     <h2 class="text-2xl font-bold text-slate-800 mb-4">Datenquellen & KI-Methoden</h2>
+                     <p class="text-stone-600 mb-8">
+                        Die "Ordnungs-KI" kombiniert verschiedene Datenquellen und fortschrittliche KI-Techniken, um intelligente und personalisierte Empfehlungen zu liefern. Die folgende Grafik visualisiert die zentralen technologischen Säulen des Projekts. Jede Achse repräsentiert eine Schlüsseltechnologie, deren Zusammenspiel die Leistungsfähigkeit des Systems ausmacht.
+                    </p>
+                    <div class="chart-container">
+                        <canvas id="aiTechChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Future Section -->
+            <section id="future" class="content-section">
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Herausforderungen & Nächste Schritte</h2>
+                    <p class="text-stone-600 mb-8">
+                        Jedes innovative Projekt steht vor Herausforderungen und bietet gleichzeitig enormes Wachstumspotenzial. Hier beleuchten wir die Grenzen unserer Lösung und skizzieren die spannende Vision für die Zukunft der "Ordnungs-KI Freiburg". Klicken Sie auf die Karten, um mehr zu erfahren.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-700 mb-4">Aktuelle Herausforderungen</h3>
+                            <div class="space-y-4">
+                                <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">Emotionale Bindungen</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Die KI kann die tiefen emotionalen Gründe für das Festhalten an Gegenständen nicht verstehen. Hier bleibt die Empathie des menschlichen Coaches unersetzlich.</p>
+                                    </div>
+                                </div>
+                                <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">Datenschutz</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Das Sammeln von Bildern aus privaten Wohnräumen erfordert höchste Standards bei Anonymisierung, Zustimmung und Datensicherheit (DSGVO).</p>
+                                    </div>
+                                </div>
+                                 <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">KI-Genauigkeit</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Die Bilderkennung kann bei sehr einzigartigen Gegenständen oder komplexer Unordnung an ihre Grenzen stoßen, was zu ungenauen Analysen führen kann.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-700 mb-4">Zukünftiges Potenzial</h3>
+                            <div class="space-y-4">
+                                <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">Smart-Home-Integration</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Verbindung mit intelligenten Geräten für eine automatisierte, passive Analyse und Unterstützung im Alltag (unter strengen Datenschutzauflagen).</p>
+                                    </div>
+                                </div>
+                                <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">Gamification & Community</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Einführung spielerischer Elemente und einer lokalen Community-Plattform in Freiburg zum Austausch von Tipps und zur gegenseitigen Motivation.</p>
+                                    </div>
+                                </div>
+                                 <div class="accordion-item bg-stone-100 rounded-lg">
+                                    <button class="accordion-header w-full text-left p-4 font-medium">Spezialisierte Module</button>
+                                    <div class="accordion-content p-4 pt-0 hidden">
+                                        <p class="text-sm text-stone-600">Entwicklung von Modulen für spezifische Bereiche wie digitales Dateimanagement, Finanzorganisation oder die Optimierung von Geschäftsprozessen.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12">
+            <p class="text-sm text-stone-500">Ein konzeptionelles "Building AI" Kursprojekt von Reaktor und der Universität Helsinki.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const sections = document.querySelectorAll('.content-section');
+            const aiTechChartCtx = document.getElementById('aiTechChart').getContext('2d');
+            
+            const coachBtn = document.getElementById('coachBtn');
+            const clientBtn = document.getElementById('clientBtn');
+            const coachWorkflow = document.getElementById('coachWorkflow');
+            const clientWorkflow = document.getElementById('clientWorkflow');
+
+            const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+            const cleanupPrompt = document.getElementById('cleanupPrompt');
+            const generateSuggestionsBtn = document.getElementById('generateSuggestionsBtn');
+            const suggestionsOutput = document.getElementById('suggestionsOutput');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const errorOutput = document.getElementById('errorOutput');
+
+            // Tab Navigation
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab');
+
+                    tabs.forEach(t => {
+                        t.classList.remove('tab-active');
+                        t.classList.add('tab-inactive');
+                    });
+                    tab.classList.add('tab-active');
+                    tab.classList.remove('tab-inactive');
+
+                    sections.forEach(section => {
+                        section.classList.remove('content-active');
+                        if (section.id === target) {
+                            section.classList.add('content-active');
+                        }
+                    });
+                });
+            });
+
+            // Workflow Toggle
+            function showWorkflow(type) {
+                const elementsToShow = (type === 'coach') ? coachWorkflow.querySelectorAll('.workflow-step') : clientWorkflow.querySelectorAll('.workflow-step');
+                const elementsToHide = (type === 'coach') ? clientWorkflow.querySelectorAll('.workflow-step') : coachWorkflow.querySelectorAll('.workflow-step');
+                
+                if (type === 'coach') {
+                    coachBtn.classList.add('workflow-btn-active');
+                    coachBtn.classList.remove('workflow-btn-inactive');
+                    clientBtn.classList.add('workflow-btn-inactive');
+                    clientBtn.classList.remove('workflow-btn-active');
+                    coachWorkflow.classList.remove('hidden');
+                    clientWorkflow.classList.add('hidden');
+                } else {
+                    clientBtn.classList.add('workflow-btn-active');
+                    clientBtn.classList.remove('workflow-btn-inactive');
+                    coachBtn.classList.add('workflow-btn-inactive');
+                    coachBtn.classList.remove('workflow-btn-active');
+                    clientWorkflow.classList.remove('hidden');
+                    coachWorkflow.classList.add('hidden');
+                }
+
+                elementsToHide.forEach(el => {
+                    el.style.opacity = 0;
+                    el.style.transform = 'translateY(10px)';
+                });
+
+                elementsToShow.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.opacity = 1;
+                        el.style.transform = 'translateY(0)';
+                    }, index * 150);
+                });
+            }
+
+            coachBtn.addEventListener('click', () => showWorkflow('coach'));
+            clientBtn.addEventListener('click', () => showWorkflow('client'));
+            
+            // Initial workflow animation
+            showWorkflow('coach');
+
+
+            // Accordion
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const item = header.parentElement;
+                    
+                    item.classList.toggle('bg-teal-50');
+
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        content.classList.add('hidden');
+                    } else {
+                        content.classList.remove('hidden');
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                });
+            });
+
+
+            // Chart.js Radar Chart
+            const chartData = {
+                labels: [
+                    'Computer Vision (Bilderkennung)',
+                    'Natural Language Processing (NLP)',
+                    'Empfehlungssysteme',
+                    'Prädiktive Analytik',
+                    'Verstärkendes Lernen (Zukunft)',
+                ],
+                datasets: [{
+                    label: 'Bedeutung im Projekt',
+                    data: [90, 75, 85, 60, 50],
+                    fill: true,
+                    backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                    borderColor: 'rgb(20, 184, 166)',
+                    pointBackgroundColor: 'rgb(20, 184, 166)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(20, 184, 166)'
+                }]
+            };
+
+            const chartConfig = {
+                type: 'radar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: '#D6D3D1' // stone-300
+                            },
+                            grid: {
+                                color: '#E7E5E4' // stone-200
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 11
+                                },
+                                color: '#44403C' // stone-700
+                            },
+                            ticks: {
+                                backdropColor: '#F5F5F4', // stone-100
+                                color: '#57534E' // stone-600
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#44403C' // stone-700
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += context.parsed.r + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            new Chart(aiTechChartCtx, chartConfig);
+
+            // Gemini API Integration for Cleanup Suggestions
+            generateSuggestionsBtn.addEventListener('click', async () => {
+                const promptText = cleanupPrompt.value.trim();
+                if (!promptText) {
+                    errorOutput.textContent = 'Bitte beschreiben Sie, was Sie organisieren möchten.';
+                    errorOutput.classList.remove('hidden');
+                    suggestionsOutput.classList.add('hidden');
+                    return;
+                }
+
+                suggestionsOutput.classList.add('hidden');
+                errorOutput.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                generateSuggestionsBtn.disabled = true;
+
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: `Generiere 3-5 kurze, umsetzbare Aufräum- und Organisationsvorschläge für folgende Situation: "${promptText}". Formatiere die Vorschläge als eine nummerierte Liste.` }] });
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        suggestionsOutput.innerHTML = text.replace(/\n/g, '<br>'); // Display suggestions, convert newlines to <br>
+                        suggestionsOutput.classList.remove('hidden');
+                    } else {
+                        errorOutput.textContent = 'Es konnten keine Vorschläge generiert werden. Bitte versuchen Sie es erneut.';
+                        errorOutput.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Generieren der Vorschläge:', error);
+                    errorOutput.textContent = 'Ein Fehler ist aufgetreten. Bitte überprüfen Sie Ihre Internetverbindung oder versuchen Sie es später erneut.';
+                    errorOutput.classList.remove('hidden');
+                } finally {
+                    loadingSpinner.classList.add('hidden');
+                    generateSuggestionsBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
